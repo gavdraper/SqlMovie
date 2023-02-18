@@ -2,6 +2,7 @@ DROP TABLE IF EXISTS Professions
 DROP TABLE IF EXISTS Cast
 DROP TABLE IF EXISTS CastProfession
 DROP TABLE IF EXISTS CastTitle
+DROP TABLE IF EXISTS TitleType
 
 --Professions
 CREATE TABLE Professions
@@ -92,3 +93,49 @@ SELECT
     CAST(REPLACE(REPLACE(x.VALUE,'tt',''),'\N','') AS INT) TitleId
  FROM master.dbo.Cast
     CROSS APPLY STRING_SPLIT(knownForTitles,',') x
+
+--TitleType
+CREATE TABLE TitleType
+(
+    Id INT NOT NULL IDENTITY,
+    [Name] NVARCHAR(40),
+    CONSTRAINT pk_Title_Type PRIMARY KEY CLUSTERED(Id),
+)
+
+INSERT INTO TitleType(Name)
+SELECT DISTINCT TitleType FROM TitleRaw
+
+--Genre
+CREATE TABLE Genre
+(
+    Id INT NOT NULL IDENTITY,
+    [Name] NVARCHAR(50),
+    CONSTRAINT pk_Genre PRIMARY KEY CLUSTERED(Id)
+)
+INSERT INTO Genre(Name)
+SELECT DISTINCT
+    x.Value
+FROM TitleRaw
+CROSS APPLY STRING_SPLIT(Genres,',') x
+WHERE x.[value] <> '\N'
+
+
+--Titles
+SELECT TOP 100 
+    CAST(REPLACE(tconst,'tt','') AS INT) Id ,
+    tt.Id TitleTypeId,
+    PrimaryTitle Name,
+    OriginalTitle [OriginalName],
+    CAST(IsAdult AS BIT) IsAdult,
+    CASE WHEN StartYear = '\N' THEN NULL ELSE CAST(StartYear AS SMALLINT) END StartYear,
+    CASE WHEN EndYEar = '\N' THEN NULL ELSE CAST(EndYear AS SMALLINT) END EndYear,
+    CASE WHEN RuntimeMinutes = '\N' THEN NULL ELSE CAST(RuntimeMinutes AS SMALLINT) END RuntimeMinutes,
+    Genres
+FROM TitleRaw    
+LEFT JOIN TitleType tt ON tt.Name = TitleRaw.TitleType
+WHERE PrimaryTitle LIKE '%Mighty Ducks%'
+
+SELECT DISTINCT TitleType FROM TitleRaw
+
+sp_rename 
+
