@@ -1,5 +1,7 @@
 DROP TABLE IF EXISTS Professions
 DROP TABLE IF EXISTS Cast
+DROP TABLE IF EXISTS CastProfession
+DROP TABLE IF EXISTS CastTitle
 
 --Professions
 CREATE TABLE Professions
@@ -13,7 +15,7 @@ INSERT INTO Professions(Name)
 SELECT DISTINCT
     x.[value]
 FROM
-    master.dbo.[data]
+    master.dbo.[Cast]
     CROSS APPLY STRING_SPLIT(primaryProfession, ',') x
 
 UPDATE Professions
@@ -42,13 +44,13 @@ SELECT
     CAST(REPLACE(birthYear,'\N','') AS SMALLINT) BirthYear,
     CAST(REPLACE(deathYear,'\N','') AS SMALLINT) DeathYear
 FROM
-    master.dbo.[data]
+    master.dbo.[Cast]
 
 UPDATE Cast SET DeathYear = NULL WHERE DeathYear =0
 UPDATE CAST SET BirthYear = NULL WHERE BirthYear = 0
 
 
-SELECT TOP 100 * FROM Cast
+SELECT TOP 100 * FROM master.dbo.Cast
 
 --CastProfessions
 CREATE TABLE CastProfession
@@ -65,7 +67,7 @@ FROM
     SELECT 
         CAST(REPLACE(nconst,'nm','') AS INT) CastId,
         x.VALUE Profession
-    FROM Master.Dbo.Data
+    FROM Master.Dbo.Cast
         CROSS APPLY STRING_SPLIT(primaryProfession, ',') x
 )x
 INNER JOIN Professions p ON p.Name = REPLACE(
@@ -78,4 +80,15 @@ INNER JOIN Professions p ON p.Name = REPLACE(
 
 
 --CastProfessions
+CREATE TABLE CastTitle
+(
+    CastId INT,
+    TitleId INT
+)
 
+INSERT INTO CastTitle
+SELECT
+    CAST(REPLACE(nconst,'nm','') AS INT) CastId,
+    CAST(REPLACE(REPLACE(x.VALUE,'tt',''),'\N','') AS INT) TitleId
+ FROM master.dbo.Cast
+    CROSS APPLY STRING_SPLIT(knownForTitles,',') x
